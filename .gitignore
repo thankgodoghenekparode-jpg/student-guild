@@ -1,0 +1,8 @@
+.dev-runtime/
+backend/.data/
+backend/node_modules/
+frontend/node_modules/
+frontend/dist/
+backend/.env
+frontend/.env
+npm-debug.log*

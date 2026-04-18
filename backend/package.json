@@ -1,0 +1,10 @@
+{
+  "name": "student-career-guide-backend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "node --watch server.js",
+    "start": "node server.js"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "student-career-guide",
+  "version": "1.0.0",
+  "description": "Modern mobile-first web app for secondary and university students to discover careers, explore courses, and plan study goals.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node scripts/dev.js",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev:backend": "npm run dev --prefix backend",
+    "start:backend": "npm run start --prefix backend",
+    "build": "npm run build --prefix frontend",
+    "setup": "npm install --prefix frontend"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}
