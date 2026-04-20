@@ -1,57 +1,46 @@
 import { useEffect, useMemo, useRef, useState } from "react"
-import { ArrowUpRight, Award, BookOpen, ExternalLink, Lightbulb, Sparkles } from "lucide-react"
+import { ArrowUpRight, BookOpen, ExternalLink, GraduationCap, Lightbulb, Sparkles } from "lucide-react"
 import { Link } from "react-router-dom"
 import Card from "../components/Card"
-import { advicePosts } from "../data/advice"
-import { scholarships } from "../data/scholarships"
+import { articleCategories } from "../data/articleCategories"
+import { apiRequest, resolveAssetUrl } from "../utils/api"
 
-const filterOptions = ["All", "Tips", "Guide", "Scholarship"]
-
-const typeMeta = {
-  Tips: {
-    icon: BookOpen,
-    color: "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
-  },
-  Guide: {
-    icon: Lightbulb,
-    color: "bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400"
-  },
-  Scholarship: {
-    icon: Award,
-    color: "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400"
-  }
-}
+const filterOptions = ["All", ...articleCategories]
 
 export default function Advice() {
   const [activeFilter, setActiveFilter] = useState("All")
   const [selectedArticleId, setSelectedArticleId] = useState(null)
+  const [articles, setArticles] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
   const detailRef = useRef(null)
 
-  const articles = useMemo(() => {
-    const resourceArticles = advicePosts.map((post) => ({
-      ...post,
-      ...typeMeta[post.type]
-    }))
+  useEffect(() => {
+    let isMounted = true
 
-    const scholarshipArticles = scholarships.slice(0, 3).map((item) => ({
-      id: `scholarship-${item.id}`,
-      type: "Scholarship",
-      title: item.title,
-      read: "Funding opportunity",
-      summary: item.description,
-      body: [
-        `Eligibility: ${item.eligibility}`,
-        "Review the official provider page for full requirements and the latest updates.",
-        "Prepare transcripts, personal statements, and supporting documents early."
-      ],
-      actionLabel: "View all scholarships",
-      actionTo: "/scholarships",
-      externalLabel: "Open funding page",
-      externalHref: item.link,
-      ...typeMeta.Scholarship
-    }))
+    async function loadArticles() {
+      try {
+        const response = await apiRequest("/articles")
 
-    return [...resourceArticles, ...scholarshipArticles]
+        if (isMounted) {
+          setArticles(response?.items || [])
+        }
+      } catch (requestError) {
+        if (isMounted) {
+          setError(requestError.message || "Unable to load survival guide articles.")
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    loadArticles()
+
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   const filteredArticles = useMemo(() => {
@@ -59,7 +48,7 @@ export default function Advice() {
       return articles
     }
 
-    return articles.filter((article) => article.type === activeFilter)
+    return articles.filter((article) => article.category === activeFilter)
   }, [activeFilter, articles])
 
   useEffect(() => {
@@ -86,16 +75,26 @@ export default function Advice() {
 
   const selectedArticle = filteredArticles.find((article) => article.id === selectedArticleId) || null
 
-  const openArticle = (article) => {
-    setSelectedArticleId(article.id)
+  const handleSelectArticle = (articleId) => {
+    if (selectedArticleId === articleId) {
+      detailRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      })
+      return
+    }
+
+    setSelectedArticleId(articleId)
   }
 
   return (
     <div className="space-y-6 animate-rise">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-display text-4xl font-bold text-slate-900 dark:text-white">Advice & Funding</h1>
-          <p className="mt-1 font-medium text-slate-500">Resources to help you pass exams and fund your degree</p>
+          <h1 className="font-display text-4xl font-bold text-slate-900 dark:text-white">Student Survival Guide</h1>
+          <p className="mt-1 font-medium text-slate-500">
+            Read admin-managed articles on money, discipline, study methods, skill growth, and internship readiness.
+          </p>
         </div>
       </div>
 
@@ -120,53 +119,87 @@ export default function Advice() {
         })}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {filteredArticles.map((article) => (
-          <div key={article.id} className="group flex h-full flex-col justify-between rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition-all hover:border-primary/20 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900">
-            <div>
-              <div className="mb-4 flex items-start justify-between">
-                <div className={`rounded-2xl p-3 ${article.color}`}>
-                  <article.icon size={22} />
+      {error && (
+        <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-600 dark:border-red-900/40 dark:bg-red-900/10 dark:text-red-300">
+          {error}
+        </div>
+      )}
+
+      {loading ? (
+        <Card className="p-8 text-center">
+          <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Loading survival guide articles...</p>
+        </Card>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2">
+          {filteredArticles.map((article) => {
+            const imageUrl = resolveAssetUrl(article.imageUrl)
+
+            return (
+              <div
+                key={article.id}
+                className="group flex h-full flex-col overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition-all hover:border-primary/20 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900"
+              >
+                {imageUrl ? (
+                  <img src={imageUrl} alt={article.title} className="h-48 w-full object-cover" />
+                ) : (
+                  <div className="flex h-48 items-center justify-center bg-gradient-to-br from-primary/15 via-secondary/10 to-emerald-100 text-primary dark:from-primary/20 dark:via-secondary/10 dark:to-slate-800">
+                    <BookOpen size={40} />
+                  </div>
+                )}
+
+                <div className="flex flex-1 flex-col justify-between p-6">
+                  <div>
+                    <div className="mb-4 flex items-start justify-between gap-3">
+                      <span className="rounded-full bg-primary/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary">
+                        {article.category}
+                      </span>
+                      <span className="text-xs font-semibold text-slate-400">{article.readTimeMinutes} min read</span>
+                    </div>
+
+                    <h3 className="mb-3 text-xl font-bold leading-snug text-slate-800 transition-colors group-hover:text-primary dark:text-white">
+                      {article.title}
+                    </h3>
+                    <p className="mb-6 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                      {article.summary}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSelectArticle(article.id)}
+                    aria-controls="guide-detail"
+                    aria-expanded={selectedArticleId === article.id}
+                    className="flex w-fit items-center gap-2 rounded-xl bg-primary/5 px-4 py-2 text-sm font-bold text-primary transition-colors hover:bg-primary/10"
+                  >
+                    {selectedArticleId === article.id ? "Jump to Guide" : "Read More"} <ArrowUpRight size={16} />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setActiveFilter(article.type)}
-                  className="rounded-full border border-slate-200 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400 transition-colors hover:border-primary/40 hover:text-primary dark:border-slate-700"
-                >
-                  {article.type}
-                </button>
               </div>
+            )
+          })}
+        </div>
+      )}
 
-              <h3 className="mb-3 text-xl font-bold leading-snug text-slate-800 transition-colors group-hover:text-primary dark:text-white">
-                {article.title}
-              </h3>
-              <p className="mb-4 text-sm leading-relaxed text-slate-500 dark:text-slate-400">{article.summary}</p>
-              <p className="mb-6 text-xs font-bold text-slate-500">{article.read}</p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => openArticle(article)}
-              className="flex w-fit items-center gap-2 rounded-xl bg-primary/5 px-4 py-2 text-sm font-bold text-primary transition-colors hover:bg-primary/10"
-            >
-              Read More <ArrowUpRight size={16} />
-            </button>
-          </div>
-        ))}
-      </div>
+      {filteredArticles.length === 0 && !loading && !error && (
+        <Card className="p-8 text-center">
+          <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
+            No articles found in this category. Try a different filter.
+          </p>
+        </Card>
+      )}
 
       {selectedArticle && (
-        <div id="advice-detail" ref={detailRef}>
+        <div id="guide-detail" ref={detailRef}>
           <Card className="space-y-6 p-6 sm:p-7">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="max-w-3xl">
                 <div className="flex flex-wrap items-center gap-3">
-                  <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-[0.22em] ${selectedArticle.color}`}>
-                    <selectedArticle.icon size={14} />
-                    {selectedArticle.type}
+                  <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.22em] text-primary">
+                    <Lightbulb size={14} />
+                    {selectedArticle.category}
                   </span>
                   <span className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                    {selectedArticle.read}
+                    {selectedArticle.readTimeMinutes} minute read
                   </span>
                 </div>
 
@@ -184,7 +217,7 @@ export default function Advice() {
             </div>
 
             <div className="grid gap-3">
-              {selectedArticle.body.map((point) => (
+              {selectedArticle.content.map((point) => (
                 <div
                   key={point}
                   className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-4 dark:border-slate-800 dark:bg-slate-950/50"
@@ -197,50 +230,24 @@ export default function Advice() {
 
             <div className="flex flex-wrap gap-3">
               <Link
-                to={selectedArticle.actionTo}
+                to="/quiz"
                 className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 transition-transform hover:-translate-y-0.5"
               >
-                {selectedArticle.actionLabel}
+                <GraduationCap size={16} />
+                Take Course Quiz
               </Link>
 
-              {selectedArticle.externalHref && (
-                <a
-                  href={selectedArticle.externalHref}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-700 transition-colors hover:border-primary/30 hover:text-primary dark:border-slate-700 dark:text-slate-200"
-                >
-                  <ExternalLink size={16} />
-                  {selectedArticle.externalLabel}
-                </a>
-              )}
-
-              <button
-                type="button"
-                onClick={() => setActiveFilter(selectedArticle.type)}
-                className="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-5 py-3 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+              <Link
+                to="/mentor"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-700 transition-colors hover:border-primary/30 hover:text-primary dark:border-slate-700 dark:text-slate-200"
               >
-                More {selectedArticle.type}
-              </button>
+                <ExternalLink size={16} />
+                Ask AI Mentor
+              </Link>
             </div>
           </Card>
         </div>
       )}
-
-      <div className="relative mt-8 overflow-hidden rounded-3xl bg-gradient-to-r from-primary to-secondary p-8 text-white shadow-xl shadow-primary/20">
-        <div className="absolute right-0 top-0 -mr-8 -mt-8 rotate-12 opacity-20">
-          <Award size={200} />
-        </div>
-        <div className="relative z-10 max-w-xl">
-          <h3 className="mb-2 font-display text-2xl font-bold">Need direct guidance?</h3>
-          <p className="mb-6 font-medium text-white/80">
-            Start with your career quiz so the app can point you toward a realistic next step before you speak with anyone.
-          </p>
-          <Link to="/quiz" className="inline-block rounded-xl bg-white px-5 py-2.5 font-bold text-primary shadow-lg transition-transform hover:-translate-y-1">
-            Start with Career Quiz
-          </Link>
-        </div>
-      </div>
     </div>
   )
 }

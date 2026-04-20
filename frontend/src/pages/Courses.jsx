@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react"
-import { Briefcase, CheckCircle2, GraduationCap, Layers3, Sparkles } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
+import { Briefcase, CheckCircle2, GraduationCap, Sparkles } from "lucide-react"
 import Card from "../components/Card"
 import SearchBar from "../components/SearchBar"
 import SectionHeader from "../components/SectionHeader"
-import { courseSearchSuggestions, courses } from "../data/courses"
+import { apiRequest } from "../utils/api"
 
 const typeFilters = ["All", "University", "Polytechnic"]
 
@@ -11,85 +11,109 @@ const quickSearches = [
   "Computer Science",
   "Nursing Science",
   "Mass Communication",
-  "Electrical and Electronic Engineering Technology",
-  "Business Administration and Management",
+  "Electrical and Electronic Engineering",
+  "Business Administration",
   "Architecture",
-  "Aeronautical Engineering",
-  "Occupational Therapy",
-  "Animation and Game Art"
+  "Accounting",
+  "Medical Laboratory Science"
 ]
 
 export default function Courses() {
   const [query, setQuery] = useState("")
   const [activeType, setActiveType] = useState("All")
+  const [courses, setCourses] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadCourses() {
+      try {
+        const response = await apiRequest("/courses")
+
+        if (isMounted) {
+          setCourses(response?.items || [])
+        }
+      } catch (requestError) {
+        if (isMounted) {
+          setError(requestError.message || "Unable to load courses.")
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    loadCourses()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   const counts = useMemo(
     () => ({
       total: courses.length,
-      university: courses.filter((course) => course.type === "University").length,
-      polytechnic: courses.filter((course) => course.type === "Polytechnic").length
+      university: courses.filter((course) => course.institutionType === "University").length,
+      polytechnic: courses.filter((course) => course.institutionType === "Polytechnic").length
     }),
-    []
+    [courses]
+  )
+
+  const courseSearchSuggestions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          courses.flatMap((course) => [
+            course.title,
+            course.category,
+            course.institutionType,
+            ...(course.careers || [])
+          ])
+        )
+      ).sort((left, right) => left.localeCompare(right)),
+    [courses]
   )
 
   const filteredCourses = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
 
-    return courses
-      .filter((course) => {
-        const matchesType = activeType === "All" || course.type === activeType
+    return courses.filter((course) => {
+      const matchesType = activeType === "All" || course.institutionType === activeType
 
-        if (!matchesType) {
-          return false
-        }
+      if (!matchesType) {
+        return false
+      }
 
-        if (!normalizedQuery) {
-          return true
-        }
+      if (!normalizedQuery) {
+        return true
+      }
 
-        const haystack = [
-          course.name,
-          course.type,
-          course.category,
-          course.overview,
-          ...(course.aliases || []),
-          ...course.waecSubjects,
-          ...course.jambCombo,
-          ...course.careers
-        ]
-          .join(" ")
-          .toLowerCase()
+      const haystack = [
+        course.title,
+        course.institutionType,
+        course.category,
+        course.summary,
+        course.overview,
+        ...(course.requiredSubjects || []),
+        ...(course.jambCombination || []),
+        ...(course.careers || []),
+        ...(course.sideSkills || [])
+      ]
+        .join(" ")
+        .toLowerCase()
 
-        return haystack.includes(normalizedQuery)
-      })
-      .sort((left, right) => {
-        const leftExact = left.name.toLowerCase() === normalizedQuery
-        const rightExact = right.name.toLowerCase() === normalizedQuery
-
-        if (leftExact !== rightExact) {
-          return leftExact ? -1 : 1
-        }
-
-        const leftStarts = left.name.toLowerCase().startsWith(normalizedQuery)
-        const rightStarts = right.name.toLowerCase().startsWith(normalizedQuery)
-
-        if (leftStarts !== rightStarts) {
-          return leftStarts ? -1 : 1
-        }
-
-        if (left.type !== right.type) {
-          return left.type.localeCompare(right.type)
-        }
-
-        return left.name.localeCompare(right.name)
-      })
-  }, [activeType, query])
+      return haystack.includes(normalizedQuery)
+    })
+  }, [activeType, courses, query])
 
   return (
     <div className="space-y-6 animate-rise">
       <SectionHeader
         title="Explore Courses"
-        subtitle="Search a broader university and polytechnic catalog, then compare WAEC focus, JAMB combinations, and likely outcomes."
+        subtitle="Browse Nigerian-relevant university and polytechnic courses, then compare subjects, careers, and side skills."
       />
 
       <Card className="space-y-5 p-6 sm:p-7">
@@ -99,10 +123,10 @@ export default function Courses() {
               Course finder
             </p>
             <h3 className="mt-2 font-display text-2xl font-semibold text-slate-900 dark:text-white">
-              Browse university and polytechnic options in one place
+              Search courses by title, subject demand, or likely career path
             </h3>
             <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-              Search by course name, institution level, subject area, or career path. The suggestion box now helps surface likely matches faster.
+              This catalog now pulls from the backend seed database so cut-off marks and article-linked admin edits can be expanded later.
             </p>
           </div>
 
@@ -182,35 +206,47 @@ export default function Courses() {
           ))}
         </div>
 
+        {error && (
+          <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-600 dark:border-red-900/40 dark:bg-red-900/10 dark:text-red-300">
+            {error}
+          </div>
+        )}
+
         <p className="text-xs text-slate-500 dark:text-slate-400">
           Showing <span className="font-semibold text-slate-700 dark:text-slate-200">{filteredCourses.length}</span> of{" "}
-          <span className="font-semibold text-slate-700 dark:text-slate-200">{counts.total}</span> courses. Exact subject requirements may vary by institution, so treat this as a planning guide and confirm final eligibility with JAMB/IBASS.
+          <span className="font-semibold text-slate-700 dark:text-slate-200">{counts.total}</span> courses. Final requirements can vary slightly by institution, so treat this as a planning guide and verify each school before applying.
         </p>
       </Card>
 
-      {filteredCourses.length > 0 ? (
+      {loading ? (
+        <Card className="p-8 text-center">
+          <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Loading course database...</p>
+        </Card>
+      ) : filteredCourses.length > 0 ? (
         <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
           {filteredCourses.map((course) => (
             <Card key={course.id} className="space-y-5 p-6 sm:p-7">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] ${
-                      course.type === "University"
-                        ? "bg-primary/10 text-primary dark:bg-primary/15"
-                        : "bg-secondary/10 text-secondary dark:bg-secondary/15"
-                    }`}>
-                      {course.type}
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] ${
+                        course.institutionType === "University"
+                          ? "bg-primary/10 text-primary dark:bg-primary/15"
+                          : "bg-secondary/10 text-secondary dark:bg-secondary/15"
+                      }`}
+                    >
+                      {course.institutionType}
                     </span>
                     <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:bg-slate-800 dark:text-slate-300">
                       {course.category}
                     </span>
                   </div>
                   <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.26em] text-primary/75">
-                    {course.careers.length} career paths
+                    Cut-off mark {course.cutoffMark}
                   </p>
                   <h3 className="mt-2 font-display text-2xl font-semibold text-slate-900 dark:text-white">
-                    {course.name}
+                    {course.title}
                   </h3>
                 </div>
 
@@ -219,18 +255,16 @@ export default function Courses() {
                 </span>
               </div>
 
-              <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                {course.overview}
-              </p>
+              <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">{course.summary}</p>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="rounded-[24px] border border-slate-200/80 bg-white/70 p-4 dark:border-slate-800 dark:bg-slate-950/60">
                   <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
                     <CheckCircle2 size={14} className="text-accent" />
-                    WAEC focus
+                    Required subjects
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2">
-                    {course.waecSubjects.map((subject) => (
+                    {course.requiredSubjects.map((subject) => (
                       <span
                         key={subject}
                         className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:bg-slate-900 dark:text-slate-200"
@@ -247,7 +281,7 @@ export default function Courses() {
                     JAMB combination
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2">
-                    {course.jambCombo.map((subject) => (
+                    {course.jambCombination.map((subject) => (
                       <span
                         key={subject}
                         className="rounded-full bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary dark:bg-primary/15"
@@ -262,7 +296,7 @@ export default function Courses() {
               <div className="rounded-[24px] border border-slate-200/80 bg-gradient-to-r from-slate-50 to-white p-4 dark:border-slate-800 dark:from-slate-950 dark:to-slate-900">
                 <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
                   <Briefcase size={14} className="text-secondary" />
-                  Possible outcomes
+                  Possible careers
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2">
                   {course.careers.map((career) => (
@@ -276,26 +310,21 @@ export default function Courses() {
                 </div>
               </div>
 
-              {course.aliases?.length > 0 && (
-                <div className="rounded-[24px] border border-dashed border-slate-200/80 p-4 dark:border-slate-800">
-                  <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
-                    <Layers3 size={14} className="text-primary" />
-                    Also searchable as
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {course.aliases.map((alias) => (
-                      <button
-                        key={alias}
-                        type="button"
-                        onClick={() => setQuery(alias)}
-                        className="rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/10"
-                      >
-                        {alias}
-                      </button>
-                    ))}
-                  </div>
+              <div className="rounded-[24px] border border-dashed border-slate-200/80 p-4 dark:border-slate-800">
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
+                  Recommended tech/side skills
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {course.sideSkills.map((skill) => (
+                    <span
+                      key={skill}
+                      className="rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/10"
+                    >
+                      {skill}
+                    </span>
+                  ))}
                 </div>
-              )}
+              </div>
             </Card>
           ))}
         </div>

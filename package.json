@@ -7,9 +7,12 @@
     "dev": "node scripts/dev.js",
     "dev:frontend": "npm run dev --prefix frontend",
     "dev:backend": "npm run dev --prefix backend",
+    "dev:admin": "npm run dev --prefix admin",
     "start:backend": "npm run start --prefix backend",
-    "build": "npm run build --prefix frontend",
-    "setup": "npm install --prefix frontend"
+    "build": "npm run build --prefix frontend && npm run build --prefix admin",
+    "build:frontend": "npm run build --prefix frontend",
+    "build:admin": "npm run build --prefix admin",
+    "setup": "npm install --prefix backend && npm install --prefix frontend && npm install --prefix admin"
   },
   "engines": {
     "node": ">=18.0.0"

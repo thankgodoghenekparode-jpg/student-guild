@@ -1,12 +1,13 @@
-import { BookOpen, Compass, CalendarDays, Home, Sparkles } from "lucide-react"
+import { BookOpen, Bot, GraduationCap, Home, MonitorPlay, Sparkles } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 
 const links = [
   { to: "/", label: "Home", icon: Home },
+  { to: "/practice", label: "CBT", icon: MonitorPlay },
   { to: "/quiz", label: "Quiz", icon: Sparkles },
-  { to: "/careers", label: "Careers", icon: Compass },
-  { to: "/planner", label: "Planner", icon: CalendarDays },
-  { to: "/advice", label: "Advice", icon: BookOpen },
+  { to: "/courses", label: "Courses", icon: GraduationCap },
+  { to: "/mentor", label: "Mentor", icon: Bot },
+  { to: "/advice", label: "Guide", icon: BookOpen },
 ]
 
 export default function BottomNav() {

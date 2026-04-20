@@ -45,7 +45,8 @@ function createLocalSession(user) {
   const safeUser = {
     id: user.id,
     name: user.name,
-    email: user.email
+    email: user.email,
+    role: user.role || "student"
   }
 
   return {
@@ -181,7 +182,8 @@ export function AuthProvider({ children }) {
       id: Date.now().toString(),
       name: String(name || "").trim() || "Student",
       email: normalizedEmail,
-      password
+      password,
+      role: "student"
     }
 
     db.push(newUser)
@@ -233,6 +235,40 @@ export function AuthProvider({ children }) {
     }
   }
 
+  const forgotPassword = async (payload) => {
+    setLoading(true)
+    setError("")
+    try {
+      const response = await apiRequest("/auth/forgot-password", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      })
+      return response
+    } catch (err) {
+      setError(err.message || "Forgot password failed")
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const resetPassword = async (payload) => {
+    setLoading(true)
+    setError("")
+    try {
+      const response = await apiRequest("/auth/reset-password", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      })
+      return response
+    } catch (err) {
+      setError(err.message || "Reset password failed")
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const logout = () => {
     persistSession(null, null)
     setError("")
@@ -254,6 +290,8 @@ export function AuthProvider({ children }) {
     setUser,
     login,
     register,
+    forgotPassword,
+    resetPassword,
     logout,
     authHeaders
   }

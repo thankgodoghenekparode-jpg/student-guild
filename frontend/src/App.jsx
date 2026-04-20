@@ -7,11 +7,13 @@ import Dashboard from "./pages/Dashboard"
 import Careers from "./pages/Careers"
 import Courses from "./pages/Courses"
 import Quiz from "./pages/Quiz"
+import Practice from "./pages/Practice"
 import Planner from "./pages/Planner"
 import Advice from "./pages/Advice"
 import Profile from "./pages/Profile"
 import Scholarships from "./pages/Scholarships"
 import Auth from "./pages/Auth"
+import MentorChat from "./pages/MentorChat"
 import { useAuth } from "./context/AuthContext"
 
 export default function App() {
@@ -56,6 +58,8 @@ export default function App() {
           <Route path="/careers" element={<ProtectedRoute><Careers /></ProtectedRoute>} />
           <Route path="/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />
           <Route path="/quiz" element={<ProtectedRoute><Quiz /></ProtectedRoute>} />
+          <Route path="/practice" element={<ProtectedRoute><Practice /></ProtectedRoute>} />
+          <Route path="/mentor" element={<ProtectedRoute><MentorChat /></ProtectedRoute>} />
           <Route path="/planner" element={<ProtectedRoute><Planner /></ProtectedRoute>} />
           <Route path="/scholarships" element={<ProtectedRoute><Scholarships /></ProtectedRoute>} />
           <Route path="/advice" element={<ProtectedRoute><Advice /></ProtectedRoute>} />

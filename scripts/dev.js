@@ -4,7 +4,9 @@ const path = require("node:path")
 
 const rootDir = path.resolve(__dirname, "..")
 const frontendDir = path.join(rootDir, "frontend")
+const adminDir = path.join(rootDir, "admin")
 const viteCliPath = path.join(frontendDir, "node_modules", "vite", "bin", "vite.js")
+const adminViteCliPath = path.join(adminDir, "node_modules", "vite", "bin", "vite.js")
 const children = []
 let shuttingDown = false
 
@@ -76,7 +78,15 @@ if (!fs.existsSync(viteCliPath)) {
   process.exit(1)
 }
 
+if (!fs.existsSync(adminViteCliPath)) {
+  process.stderr.write("[admin] Missing Vite CLI. Run `npm run setup` from the repo root first.\n")
+  process.exit(1)
+}
+
 runProcess("backend", process.execPath, [path.join(rootDir, "backend", "server.js")])
 runProcess("frontend", process.execPath, [viteCliPath, "--host", "127.0.0.1"], {
   cwd: frontendDir
+})
+runProcess("admin", process.execPath, [adminViteCliPath, "--host", "127.0.0.1", "--port", "5174"], {
+  cwd: adminDir
 })

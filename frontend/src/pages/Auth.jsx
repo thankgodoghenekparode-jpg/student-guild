@@ -8,8 +8,8 @@ import authBg from "../assets/images/auth-bg.jpg"
 
 export default function Auth() {
   const [mode, setMode] = useState("login")
-  const [form, setForm] = useState({ name: "", email: "", password: "" })
-  const { login, register, loading, error, setError, user } = useAuth()
+  const [form, setForm] = useState({ name: "", email: "", password: "", resetToken: "", newPassword: "" })
+  const { login, register, forgotPassword, resetPassword, loading, error, setError, user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -30,8 +30,14 @@ export default function Auth() {
     try {
       if (mode === "login") {
         await login({ email: form.email, password: form.password })
-      } else {
+      } else if (mode === "register") {
         await register({ name: form.name, email: form.email, password: form.password })
+      } else if (mode === "forgot") {
+        await forgotPassword({ email: form.email })
+        setMode("reset")
+      } else if (mode === "reset") {
+        await resetPassword({ token: form.resetToken, password: form.newPassword })
+        setMode("login")
       }
       const redirectTo = location.state?.from || "/profile"
       navigate(redirectTo)
@@ -60,7 +66,7 @@ export default function Auth() {
                 Account Access
               </p>
               <h3 className="mt-1 font-display text-2xl font-bold text-slate-900 dark:text-white">
-                {mode === "login" ? "Welcome back" : "Create account"}
+                {mode === "login" ? "Welcome back" : mode === "register" ? "Create account" : mode === "forgot" ? "Reset password" : "Enter reset code"}
               </h3>
             </div>
             <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-inner">
@@ -98,28 +104,66 @@ export default function Auth() {
                 />
               </div>
             )}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Email Address</label>
-              <input
-                value={form.email}
-                onChange={handleChange("email")}
-                placeholder="you@example.com"
-                type="email"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition-all duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 dark:focus:bg-slate-900"
-                required
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Password</label>
-              <input
-                value={form.password}
-                onChange={handleChange("password")}
-                type="password"
-                placeholder="********"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition-all duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 dark:focus:bg-slate-900"
-                required
-              />
-            </div>
+            {(mode === "login" || mode === "register" || mode === "forgot") && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Email Address</label>
+                <input
+                  value={form.email}
+                  onChange={handleChange("email")}
+                  placeholder="you@example.com"
+                  type="email"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition-all duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 dark:focus:bg-slate-900"
+                  required
+                />
+              </div>
+            )}
+            {(mode === "login" || mode === "register") && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Password</label>
+                <input
+                  value={form.password}
+                  onChange={handleChange("password")}
+                  type="password"
+                  placeholder="********"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition-all duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 dark:focus:bg-slate-900"
+                  required
+                />
+                {mode === "login" && (
+                  <button
+                    type="button"
+                    onClick={() => setMode("forgot")}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                )}
+              </div>
+            )}
+            {mode === "reset" && (
+              <>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Reset Token</label>
+                  <input
+                    value={form.resetToken}
+                    onChange={handleChange("resetToken")}
+                    placeholder="Enter reset token from email"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition-all duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 dark:focus:bg-slate-900"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-600 dark:text-slate-400">New Password</label>
+                  <input
+                    value={form.newPassword}
+                    onChange={handleChange("newPassword")}
+                    type="password"
+                    placeholder="********"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition-all duration-200 focus:border-primary/50 focus:bg-white focus:ring-4 focus:ring-primary/10 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 dark:focus:bg-slate-900"
+                    required
+                  />
+                </div>
+              </>
+            )}
 
             {error && (
               <div className="rounded-xl border border-red-100 bg-red-50 p-4 dark:border-red-900/50 dark:bg-red-900/10">
@@ -132,9 +176,21 @@ export default function Auth() {
               disabled={loading}
               className="mt-6 w-full rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-white shadow-[0_4px_14px_0_rgba(79,70,229,0.39)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(79,70,229,0.23)] disabled:opacity-70 disabled:hover:translate-y-0"
             >
-              {loading ? "Please wait..." : mode === "login" ? "Sign In to Account" : "Create Account"}
+              {loading ? "Please wait..." : mode === "login" ? "Sign In to Account" : mode === "register" ? "Create Account" : mode === "forgot" ? "Send Reset Email" : "Reset Password"}
             </button>
           </form>
+
+          {(mode === "forgot" || mode === "reset") && (
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => setMode("login")}
+                className="text-xs text-primary hover:underline"
+              >
+                Back to Sign In
+              </button>
+            </div>
+          )}
         </Card>
 
         <Card className="flex flex-col space-y-6 border-none bg-white p-8 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] dark:bg-slate-900">
@@ -156,7 +212,7 @@ export default function Auth() {
             {[
               "Save quiz results so your career recommendations stay easy to revisit.",
               "Bookmark courses and scholarships that fit your goals.",
-              "Connect to the Express and MongoDB backend when configured."
+              "Sync your account with the backend API so saved courses and guide content persist cleanly."
             ].map((item) => (
               <div
                 key={item}

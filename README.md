@@ -1,58 +1,403 @@
 # Student Career Guide
 
-Modern mobile-first web app for secondary and university students to discover careers, explore courses, and plan study goals.
+Student Career Guide is a three-part project for Nigerian students:
 
-## Project Structure
-- `frontend/` React + Tailwind mobile web app
-- `backend/` lightweight Node API for auth and health checks, with file-based local storage
+- `frontend/` is the student-facing React app.
+- `backend/` is the API with a seeded file-based database, recommendation logic, auth, admin protection, image upload support, and future-service extension points.
+- `admin/` is the React admin dashboard for managing courses and survival guide articles.
 
-## Features
-- Career quiz with AI-style recommendations
-- Course explorer with WAEC + JAMB requirements
-- Scholarships & opportunities feed
-- Student advice blog
-- Study planner with weekly progress
-- Dark mode
-- Bookmarks and saved quiz results
-- Notifications for scholarship updates
-- Auth that prefers the backend API and falls back to `localStorage` when the API is unavailable
+## What is implemented
 
-## Run Locally
+- Seeded backend database with 30+ Nigerian-relevant courses.
+- Course recommendation quiz that returns the top 3 matched courses.
+- JAMB and WAEC CBT practice section with yearly subject drills, exam-year past paper sets, 40 to 60 question full mock exams, scoring, review, saved attempt history, streak tracking, leaderboard support, and performance analytics.
+- Recommendation output with match percentage, fit explanation, required subjects, careers, and recommended side skills.
+- Save Course flow backed by the API.
+- AI Mentor chat UI with a real backend endpoint and placeholder response logic that is ready to swap for OpenAI later.
+- Student Survival Guide article categories:
+  - Financial discipline
+  - Avoiding bad influence
+  - Study techniques
+  - Skill development
+  - Internship preparation
+- Admin dashboard for:
+  - Adding and editing courses
+  - Updating cut-off marks
+  - Adding, editing, and deleting guide articles
+  - Adding, editing, and deleting CBT practice questions
+  - Bulk importing CBT practice questions from pasted or uploaded JSON and CSV files
+  - Exporting the filtered practice bank as downloadable JSON or CSV
+  - Uploading article images
+  - Viewing total users
+  - Viewing most selected courses
+  - Viewing practice question and attempt totals
+- Security basics:
+  - Input validation
+  - Protected admin routes
+  - Sanitized query handling
+  - Signed auth tokens with expiry
+- Future scalability structure for:
+  - Premium subscriptions
+  - Push notifications
+  - University ads
+  - Scholarship integrations
 
-### Quick start from repo root
+## Architecture
+
+### Backend
+
+- Express API
+- JSON file database in `backend/.data/`
+- Repositories, controllers, models, routes, middleware, and services separated by responsibility
+- Seed data is initialized automatically on first start
+
+### Student frontend
+
+- React + Vite
+- Student auth, quiz, course explorer, mentor chat, survival guide, profile, careers, planner, and scholarships screens
+- API-backed recommendations, saved courses, course catalog, and guide content
+
+### Admin frontend
+
+- React + Vite
+- Protected admin login
+- Overview stats, course management, article management, image upload workflow, and practice-bank import/export tools
+
+## Project structure
+
+```text
+student-career-guide/
+├─ admin/
+│  ├─ src/
+│  │  ├─ components/
+│  │  ├─ utils/
+│  │  ├─ App.jsx
+│  │  ├─ main.jsx
+│  │  └─ styles.css
+│  ├─ .env.example
+│  ├─ index.html
+│  ├─ package.json
+│  └─ vite.config.js
+├─ backend/
+│  ├─ src/
+│  │  ├─ config/
+│  │  ├─ constants/
+│  │  ├─ controllers/
+│  │  ├─ data/
+│  │  ├─ database/
+│  │  │  └─ repositories/
+│  │  ├─ middleware/
+│  │  ├─ models/
+│  │  ├─ routes/
+│  │  ├─ scripts/
+│  │  ├─ services/
+│  │  │  └─ future/
+│  │  ├─ uploads/
+│  │  ├─ utils/
+│  │  ├─ app.js
+│  │  └─ server.js
+│  ├─ .env.example
+│  ├─ package.json
+│  └─ server.js
+├─ frontend/
+│  ├─ src/
+│  │  ├─ components/
+│  │  ├─ context/
+│  │  ├─ data/
+│  │  ├─ hooks/
+│  │  ├─ pages/
+│  │  ├─ utils/
+│  │  ├─ App.jsx
+│  │  ├─ main.jsx
+│  │  └─ styles.css
+│  ├─ .env.example
+│  ├─ package.json
+│  └─ vite.config.js
+├─ scripts/
+│  └─ dev.js
+├─ package.json
+└─ README.md
+```
+
+## Setup
+
+### 1. Install dependencies
+
+From the repo root:
 
 ```bash
 npm run setup
-npm run dev
-npm run build
 ```
 
-`npm run dev` starts both the backend API and the frontend dev server together.
-
-### Backend API
+### 2. Copy environment files
 
 ```bash
-cd backend
-copy .env.example .env
-npm run dev
+copy backend\.env.example backend\.env
+copy frontend\.env.example frontend\.env
+copy admin\.env.example admin\.env
 ```
 
-API runs on `http://localhost:5000`.
-Health check: `http://localhost:5000/api/health`
-
-### Frontend
+### 3. Start everything
 
 ```bash
-cd frontend
-npm install
-copy .env.example .env
 npm run dev
 ```
 
-Frontend runs on `http://localhost:5173`.
+This starts:
 
-## Notes
-- In local development, Vite proxies `/api` requests to `http://localhost:5000` by default.
-- The frontend keeps working even if the backend is offline by falling back to `localStorage` for auth.
-- The backend stores local development users in `backend/.data/users.json`, which is gitignored.
-- From the repo root, use `npm run dev` for both apps, `npm run dev:backend` for the API only, and `npm run dev:frontend` for the frontend only.
+- Student frontend: `http://127.0.0.1:5173`
+- Admin frontend: `http://127.0.0.1:5174`
+- Backend API: `http://127.0.0.1:5000`
+
+## Default seeded accounts
+
+- Admin:
+  - Email: `admin@studentguide.ng`
+  - Password: `Admin@12345`
+- Demo student:
+  - Email: `student@example.com`
+  - Password: `Student@12345`
+
+You can change the admin seed credentials in `backend/.env`.
+
+## Seed data
+
+Seed data is created automatically on first backend start and includes:
+
+- 30+ Nigerian-relevant courses
+- 5 survival guide articles across the required categories
+- 210 JAMB and WAEC practice questions across 14 subjects and multiple exam years
+- 1 admin account
+- 1 demo student account
+
+The core seed definitions live in:
+
+- `backend/src/data/seedData.js`
+
+The recommendation algorithm lives in:
+
+- `backend/src/services/recommendationAlgorithm.js`
+
+## Important API endpoints
+
+### Auth
+
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `GET /api/auth/me`
+
+### Courses and recommendations
+
+- `GET /api/courses`
+- `GET /api/courses/:courseId`
+- `GET /api/courses/saved`
+- `POST /api/courses/:courseId/save`
+- `DELETE /api/courses/saved/:savedCourseId`
+- `GET /api/recommendations/questions`
+- `POST /api/recommendations/quiz`
+
+### AI mentor
+
+- `POST /api/mentor/query`
+
+### CBT practice
+
+- `GET /api/practice/catalog`
+- `GET /api/practice/questions`
+- `POST /api/practice/past-paper-session`
+- `POST /api/practice/mock-session`
+- `POST /api/practice/submit`
+- `GET /api/practice/history`
+- `POST /api/practice/history`
+- `GET /api/practice/analytics`
+- `GET /api/practice/streak`
+- `GET /api/practice/leaderboard`
+
+### Survival guide
+
+- `GET /api/articles`
+- `GET /api/articles/:articleId`
+
+### Admin
+
+- `GET /api/admin/overview`
+- `GET /api/admin/courses`
+- `POST /api/admin/courses`
+- `PUT /api/admin/courses/:courseId`
+- `DELETE /api/admin/courses/:courseId`
+- `GET /api/admin/articles`
+- `POST /api/admin/articles`
+- `PUT /api/admin/articles/:articleId`
+- `DELETE /api/admin/articles/:articleId`
+- `GET /api/admin/practice-questions`
+- `GET /api/admin/practice-questions/export`
+- `POST /api/admin/practice-questions`
+- `POST /api/admin/practice-questions/import`
+- `PUT /api/admin/practice-questions/:questionId`
+- `DELETE /api/admin/practice-questions/:questionId`
+- `POST /api/admin/uploads/image`
+
+## Basic API testing instructions
+
+### Health check
+
+```powershell
+Invoke-RestMethod -Uri http://127.0.0.1:5000/api/health
+```
+
+### Login as admin
+
+```powershell
+$body = @{
+  email = "admin@studentguide.ng"
+  password = "Admin@12345"
+} | ConvertTo-Json
+
+$login = Invoke-RestMethod `
+  -Method Post `
+  -Uri http://127.0.0.1:5000/api/auth/login `
+  -ContentType "application/json" `
+  -Body $body
+
+$token = $login.token
+```
+
+### Get quiz questions
+
+```powershell
+Invoke-RestMethod -Uri http://127.0.0.1:5000/api/recommendations/questions
+```
+
+### Test course recommendations
+
+```powershell
+$quiz = @{
+  answers = @{
+    strengths = "mathematics"
+    interests = "technology"
+    workStyles = "technology"
+    goals = "build-products"
+    studyPreferences = "practical-builds"
+  }
+} | ConvertTo-Json -Depth 4
+
+Invoke-RestMethod `
+  -Method Post `
+  -Uri http://127.0.0.1:5000/api/recommendations/quiz `
+  -ContentType "application/json" `
+  -Body $quiz
+```
+
+### Fetch admin overview
+
+```powershell
+Invoke-RestMethod `
+  -Uri http://127.0.0.1:5000/api/admin/overview `
+  -Headers @{ Authorization = "Bearer $token" }
+```
+
+### Bulk import CBT questions from JSON
+
+```powershell
+$questions = @(
+  @{
+    examType = "JAMB"
+    subject = "Use of English"
+    topic = "Grammar"
+    year = "2026"
+    prompt = "Choose the best option."
+    options = @("A", "B", "C", "D")
+    correctOption = "A"
+    explanation = "Option A is correct."
+  }
+) | ConvertTo-Json -Depth 6
+
+$importBody = @{
+  format = "json"
+  content = $questions
+} | ConvertTo-Json -Depth 6
+
+Invoke-RestMethod `
+  -Method Post `
+  -Uri http://127.0.0.1:5000/api/admin/practice-questions/import `
+  -Headers @{ Authorization = "Bearer $token" } `
+  -ContentType "application/json" `
+  -Body $importBody
+```
+
+### Admin practice bank file tools
+
+- In the admin `Practice Bank` tab, use `Choose file` or drag a local `.json` or `.csv` file into the drop zone to load it into the bulk import panel.
+- Use `Export JSON` or `Export CSV` to download the currently filtered practice question list for backup, review, or reuse.
+- The backend also exposes `GET /api/admin/practice-questions/export?format=json|csv` so exports can be automated later for scheduled backups.
+
+### Start a 60-question JAMB mock exam
+
+```powershell
+$mock = @{
+  examType = "JAMB"
+  subjects = @("Use of English", "Mathematics", "Biology", "Chemistry")
+  totalQuestions = 60
+} | ConvertTo-Json
+
+Invoke-RestMethod `
+  -Method Post `
+  -Uri http://127.0.0.1:5000/api/practice/mock-session `
+  -ContentType "application/json" `
+  -Body $mock
+```
+
+### Open a JAMB past paper set by year
+
+```powershell
+$pastPaper = @{
+  examType = "JAMB"
+  year = "2024"
+  subjects = @("Use of English", "Mathematics", "Biology", "Chemistry")
+} | ConvertTo-Json
+
+Invoke-RestMethod `
+  -Method Post `
+  -Uri http://127.0.0.1:5000/api/practice/past-paper-session `
+  -ContentType "application/json" `
+  -Body $pastPaper
+```
+
+### Fetch practice analytics for a student
+
+```powershell
+Invoke-RestMethod `
+  -Uri http://127.0.0.1:5000/api/practice/analytics `
+  -Headers @{ Authorization = "Bearer $token" }
+```
+
+### Fetch streak and leaderboard data
+
+```powershell
+Invoke-RestMethod `
+  -Uri http://127.0.0.1:5000/api/practice/streak `
+  -Headers @{ Authorization = "Bearer $token" }
+
+Invoke-RestMethod `
+  -Uri http://127.0.0.1:5000/api/practice/leaderboard `
+  -Headers @{ Authorization = "Bearer $token" }
+```
+
+## Security notes
+
+- All write endpoints validate expected fields.
+- Admin APIs require a valid token plus admin role.
+- User tokens are signed and time-limited.
+- Search and filtering use sanitized string matching rather than dynamic query execution.
+- Uploaded images are restricted to image MIME types and size-limited on the backend.
+
+## Future scalability notes
+
+Placeholders for future product areas already exist in:
+
+- `backend/src/services/future/subscriptionService.js`
+- `backend/src/services/future/notificationService.js`
+- `backend/src/services/future/advertisingService.js`
+- `backend/src/services/future/scholarshipService.js`
+
+This keeps the current codebase ready for premium reports, notifications, ads, and scholarship integrations without needing to rewrite the main app structure first.

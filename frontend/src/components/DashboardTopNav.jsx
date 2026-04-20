@@ -1,6 +1,9 @@
 import { Search, Bell, User } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 
-export default function DashboardTopNav({ user }) {
+export default function DashboardTopNav({ user, onNotificationsClick, onProfileClick }) {
+  const navigate = useNavigate()
+
   return (
     <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-slate-200 bg-white/80 px-4 shadow-sm backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/80 sm:gap-x-6 sm:px-6 lg:px-8">
       <div className="flex flex-1 gap-x-4 lg:gap-x-6">
@@ -25,7 +28,18 @@ export default function DashboardTopNav({ user }) {
             Welcome back, <span className="font-semibold text-slate-900 dark:text-white">{user?.name || "Teacher"}</span>
           </p>
 
-          <button type="button" className="relative p-2 text-slate-400 transition-colors hover:text-slate-500 dark:hover:text-slate-300">
+          <button
+            type="button"
+            onClick={() => {
+              if (onNotificationsClick) {
+                onNotificationsClick()
+                return
+              }
+
+              navigate("/scholarships")
+            }}
+            className="relative p-2 text-slate-400 transition-colors hover:text-slate-500 dark:hover:text-slate-300"
+          >
             <span className="sr-only">View notifications</span>
             <Bell className="h-5 w-5" aria-hidden="true" />
             <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900" />
@@ -36,7 +50,18 @@ export default function DashboardTopNav({ user }) {
 
           {/* Profile avatar */}
           <div className="flex items-center gap-x-4">
-            <button type="button" className="flex items-center transition-transform hover:scale-105">
+            <button
+              type="button"
+              onClick={() => {
+                if (onProfileClick) {
+                  onProfileClick()
+                  return
+                }
+
+                navigate("/profile")
+              }}
+              className="flex items-center transition-transform hover:scale-105"
+            >
               <span className="sr-only">Open user menu</span>
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-tr from-indigo-500 to-cyan-500 text-white shadow-md">
                 <User className="h-4 w-4" />

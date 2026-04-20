@@ -1,14 +1,15 @@
 import { NavLink, Link } from "react-router-dom"
 import DarkModeToggle from "./DarkModeToggle"
-import { Compass, CalendarDays, BookOpen, UserCircle, Sparkles } from "lucide-react"
+import { BookOpen, Bot, GraduationCap, MonitorPlay, Sparkles } from "lucide-react"
 
 export default function TopBar({ name, isDark, onToggle }) {
   const links = [
     { to: "/", label: "My Journey" },
-    { to: "/careers", label: "Explore Careers", icon: Compass },
-    { to: "/quiz", label: "Career Quiz", icon: Sparkles },
-    { to: "/planner", label: "Study Planner", icon: CalendarDays },
-    { to: "/advice", label: "Advice Hub", icon: BookOpen },
+    { to: "/practice", label: "Practice CBT", icon: MonitorPlay },
+    { to: "/courses", label: "Explore Courses", icon: GraduationCap },
+    { to: "/quiz", label: "Course Quiz", icon: Sparkles },
+    { to: "/mentor", label: "AI Mentor", icon: Bot },
+    { to: "/advice", label: "Survival Guide", icon: BookOpen },
   ]
 
   return (
