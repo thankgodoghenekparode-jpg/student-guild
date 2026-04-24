@@ -154,7 +154,7 @@ export function AuthProvider({ children }) {
     return () => {
       isCancelled = true
     }
-  }, [token, user])
+  }, [token])
 
   const localLogin = async ({ email, password }) => {
     await pause(250)
