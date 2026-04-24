@@ -1,6 +1,7 @@
 const fsp = require("node:fs/promises")
 const path = require("node:path")
 const bcrypt = require("bcryptjs")
+const { Pool } = require("pg")
 const { env } = require("../config/env")
 const { seededArticles, seededCourses, seededDemoUser } = require("../data/seedData")
 const { seededPracticeQuestions } = require("../data/practiceSeedData")
@@ -14,22 +15,75 @@ const collections = {
   practiceAttempts: "practice-attempts.json"
 }
 
-async function ensureDatabaseSeeded() {
-  await fsp.mkdir(env.dataDir, { recursive: true })
-  await fsp.mkdir(env.uploadsDir, { recursive: true })
-  await fsp.mkdir(path.join(env.uploadsDir, "images"), { recursive: true })
+let poolInstance = null
+let storeReadyPromise = null
 
-  await ensureCollectionFile("courses", normalizeCourses(seededCourses))
-  await ensureCollectionFile("articles", normalizeArticles(seededArticles))
-  await ensureCollectionFile("savedCourses", [])
-  await ensureCollectionFile("practiceQuestions", normalizePracticeQuestions(seededPracticeQuestions))
-  await ensureCollectionFile("practiceAttempts", [])
-  await ensureCollectionFile("users", await buildSeedUsers())
+async function ensureDatabaseSeeded() {
+  await ensureStoreReady()
+
+  if (env.uploadBackend === "file" && !env.isVercel) {
+    await fsp.mkdir(env.uploadsDir, { recursive: true })
+    await fsp.mkdir(path.join(env.uploadsDir, "images"), { recursive: true })
+  }
+
+  await ensureCollectionDocument("courses", normalizeCourses(seededCourses))
+  await ensureCollectionDocument("articles", normalizeArticles(seededArticles))
+  await ensureCollectionDocument("savedCourses", [])
+  await ensureCollectionDocument("practiceQuestions", normalizePracticeQuestions(seededPracticeQuestions))
+  await ensureCollectionDocument("practiceAttempts", [])
+  await ensureCollectionDocument("users", await buildSeedUsers())
   await ensureSeedUsers()
   await ensureSeedPracticeQuestions()
 }
 
-async function ensureCollectionFile(collectionName, seedValue) {
+async function ensureStoreReady() {
+  if (env.isVercel && env.databaseBackend === "file") {
+    throw new Error("Configure DATABASE_URL before deploying the backend to Vercel.")
+  }
+
+  if (!storeReadyPromise) {
+    storeReadyPromise =
+      env.databaseBackend === "postgres" ? ensurePostgresStoreReady() : ensureFileStoreReady()
+  }
+
+  try {
+    await storeReadyPromise
+  } catch (error) {
+    storeReadyPromise = null
+    throw error
+  }
+}
+
+async function ensurePostgresStoreReady() {
+  await getPool().query(`
+    CREATE TABLE IF NOT EXISTS app_collections (
+      name TEXT PRIMARY KEY,
+      payload JSONB NOT NULL DEFAULT '[]'::jsonb,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `)
+}
+
+async function ensureFileStoreReady() {
+  await fsp.mkdir(env.dataDir, { recursive: true })
+}
+
+async function ensureCollectionDocument(collectionName, seedValue) {
+  await ensureStoreReady()
+  assertKnownCollection(collectionName)
+
+  if (env.databaseBackend === "postgres") {
+    await getPool().query(
+      `
+        INSERT INTO app_collections (name, payload)
+        VALUES ($1, $2::jsonb)
+        ON CONFLICT (name) DO NOTHING
+      `,
+      [collectionName, JSON.stringify(seedValue)]
+    )
+    return
+  }
+
   const filePath = getCollectionFile(collectionName)
 
   try {
@@ -40,16 +94,29 @@ async function ensureCollectionFile(collectionName, seedValue) {
 }
 
 function getCollectionFile(collectionName) {
-  const filename = collections[collectionName]
-
-  if (!filename) {
-    throw new Error(`Unknown collection: ${collectionName}`)
-  }
-
-  return path.join(env.dataDir, filename)
+  assertKnownCollection(collectionName)
+  return path.join(env.dataDir, collections[collectionName])
 }
 
 async function readCollection(collectionName) {
+  await ensureStoreReady()
+  assertKnownCollection(collectionName)
+
+  if (env.databaseBackend === "postgres") {
+    const result = await getPool().query(
+      `
+        SELECT payload
+        FROM app_collections
+        WHERE name = $1
+        LIMIT 1
+      `,
+      [collectionName]
+    )
+
+    const payload = result.rows[0]?.payload
+    return Array.isArray(payload) ? payload : []
+  }
+
   const filePath = getCollectionFile(collectionName)
   const raw = await fsp.readFile(filePath, "utf8")
 
@@ -62,6 +129,24 @@ async function readCollection(collectionName) {
 }
 
 async function writeCollection(collectionName, data) {
+  await ensureStoreReady()
+  assertKnownCollection(collectionName)
+
+  if (env.databaseBackend === "postgres") {
+    await getPool().query(
+      `
+        INSERT INTO app_collections (name, payload, updated_at)
+        VALUES ($1, $2::jsonb, NOW())
+        ON CONFLICT (name)
+        DO UPDATE SET
+          payload = EXCLUDED.payload,
+          updated_at = NOW()
+      `,
+      [collectionName, JSON.stringify(data)]
+    )
+    return
+  }
+
   const filePath = getCollectionFile(collectionName)
   await fsp.writeFile(filePath, `${JSON.stringify(data, null, 2)}\n`, "utf8")
 }
@@ -203,6 +288,27 @@ async function ensureSeedPracticeQuestions() {
 
   if (changed) {
     await writeCollection("practiceQuestions", practiceQuestions)
+  }
+}
+
+function getPool() {
+  if (!env.databaseUrl) {
+    throw new Error("DATABASE_URL is required when DATABASE_PROVIDER is set to postgres.")
+  }
+
+  if (!poolInstance) {
+    poolInstance = new Pool({
+      connectionString: env.databaseUrl,
+      ssl: env.databaseSsl ? { rejectUnauthorized: false } : undefined
+    })
+  }
+
+  return poolInstance
+}
+
+function assertKnownCollection(collectionName) {
+  if (!collections[collectionName]) {
+    throw new Error(`Unknown collection: ${collectionName}`)
   }
 }
 

@@ -1,4 +1,3 @@
-const path = require("node:path")
 const { countArticles, createArticle, deleteArticle, findArticleById, listArticles, updateArticle } = require("../database/repositories/articleRepository")
 const { countCourses, createCourse, deleteCourse, findCourseById, listAllCourses, updateCourse } = require("../database/repositories/courseRepository")
 const {
@@ -23,6 +22,7 @@ const {
   normalizeExportQuestion
 } = require("../services/practiceExportService")
 const { parsePracticeImport } = require("../services/practiceImportService")
+const { saveUploadedImage } = require("../storage/imageStorage")
 const { createHttpError } = require("../utils/errors")
 const { sanitizeText } = require("../utils/sanitize")
 
@@ -232,7 +232,7 @@ async function uploadImage(request, response) {
   }
 
   response.status(201).json({
-    imageUrl: `/uploads/images/${path.basename(request.file.filename)}`
+    imageUrl: await saveUploadedImage(request.file)
   })
 }
 
