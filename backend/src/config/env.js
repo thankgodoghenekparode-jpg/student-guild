@@ -20,6 +20,8 @@ const env = {
   uploadProvider: String(process.env.UPLOAD_PROVIDER || "auto").trim().toLowerCase(),
   blobReadWriteToken: String(process.env.BLOB_READ_WRITE_TOKEN || "").trim(),
   openaiApiKey: String(process.env.OPENAI_API_KEY || "").trim(),
+  supabaseUrl: String(process.env.SUPABASE_URL || "").trim(),
+  supabaseServiceRoleKey: String(process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim(),
   frontendOrigin: process.env.FRONTEND_ORIGIN || "http://127.0.0.1:5173",
   adminOrigin: process.env.ADMIN_ORIGIN || "http://127.0.0.1:5174",
   additionalAllowedOrigins: process.env.ALLOWED_ORIGINS || "",
@@ -47,12 +49,21 @@ function buildAllowedOrigins(entries) {
 }
 
 function resolveDatabaseBackend(currentEnv) {
+  if (currentEnv.databaseProvider === "supabase") {
+    return "supabase"
+  }
+
   if (currentEnv.databaseProvider === "postgres") {
     return "postgres"
   }
 
   if (currentEnv.databaseProvider === "file") {
     return "file"
+  }
+
+  // Auto-detect based on available credentials
+  if (currentEnv.supabaseUrl && currentEnv.supabaseServiceRoleKey) {
+    return "supabase"
   }
 
   return currentEnv.databaseUrl ? "postgres" : "file"

@@ -47,7 +47,156 @@ Student Career Guide is a three-part project for Nigerian students:
 ### Backend
 
 - Express API
-- JSON file database in `backend/.data/`
+- Database backends: File (default), PostgreSQL, or Supabase
+- Authentication: JWT with optional Supabase Auth integration
+
+### Database Setup
+
+The project supports multiple database backends:
+
+#### File Storage (Default)
+- No setup required
+- Data stored in `backend/.data/` as JSON files
+- Suitable for development and small deployments
+
+#### PostgreSQL
+- Set `DATABASE_URL` environment variable
+- Requires PostgreSQL server
+- Better performance for larger datasets
+
+#### Supabase (Recommended for Production)
+Supabase provides a PostgreSQL database with additional features like real-time subscriptions, authentication, and storage.
+
+**Setup Steps:**
+
+1. **Create a Supabase Project:**
+   - Go to [supabase.com](https://supabase.com)
+   - Create a new project
+   - Wait for setup to complete
+
+2. **Get Your Credentials:**
+   - Go to Settings > API in your Supabase dashboard
+   - Copy your Project URL and anon/public key
+   - Go to Settings > API > Service Role and copy the service_role key
+
+3. **Configure Environment Variables:**
+   ```bash
+   # Backend (.env)
+   DATABASE_PROVIDER=supabase
+   SUPABASE_URL=https://your-project.supabase.co
+   SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+   # Frontend (.env)
+   VITE_SUPABASE_URL=https://your-project.supabase.co
+   VITE_SUPABASE_ANON_KEY=your-anon-key
+   ```
+
+4. **Create Database Tables:**
+   Run the following SQL in your Supabase SQL Editor:
+
+   ```sql
+   -- Users table
+   CREATE TABLE users (
+     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+     email TEXT UNIQUE NOT NULL,
+     name TEXT NOT NULL,
+     created_at TIMESTAMPTZ DEFAULT NOW(),
+     updated_at TIMESTAMPTZ DEFAULT NOW()
+   );
+
+   -- Courses table
+   CREATE TABLE courses (
+     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+     title TEXT NOT NULL,
+     institution_type TEXT NOT NULL,
+     category TEXT NOT NULL,
+     summary TEXT NOT NULL,
+     overview TEXT NOT NULL,
+     cutoff_mark INTEGER DEFAULT 180,
+     required_subjects TEXT[] DEFAULT '{}',
+     jamb_combination TEXT NOT NULL,
+     careers TEXT[] DEFAULT '{}',
+     side_skills TEXT[] DEFAULT '{}',
+     tags TEXT[] DEFAULT '{}',
+     strengths TEXT[] DEFAULT '{}',
+     interests TEXT[] DEFAULT '{}',
+     work_styles TEXT[] DEFAULT '{}',
+     goals TEXT[] DEFAULT '{}',
+     study_preferences TEXT[] DEFAULT '{}',
+     created_at TIMESTAMPTZ DEFAULT NOW(),
+     updated_at TIMESTAMPTZ DEFAULT NOW()
+   );
+
+   -- Articles table
+   CREATE TABLE articles (
+     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+     title TEXT NOT NULL,
+     category TEXT NOT NULL,
+     content TEXT NOT NULL,
+     excerpt TEXT NOT NULL,
+     tags TEXT[] DEFAULT '{}',
+     image_url TEXT,
+     created_at TIMESTAMPTZ DEFAULT NOW(),
+     updated_at TIMESTAMPTZ DEFAULT NOW()
+   );
+
+   -- Practice questions table
+   CREATE TABLE practice_questions (
+     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+     subject TEXT NOT NULL,
+     question TEXT NOT NULL,
+     options TEXT[] NOT NULL,
+     correct_answer INTEGER NOT NULL,
+     explanation TEXT NOT NULL,
+     year INTEGER,
+     exam_type TEXT NOT NULL,
+     difficulty TEXT NOT NULL,
+     tags TEXT[] DEFAULT '{}',
+     created_at TIMESTAMPTZ DEFAULT NOW(),
+     updated_at TIMESTAMPTZ DEFAULT NOW()
+   );
+
+   -- Practice attempts table
+   CREATE TABLE practice_attempts (
+     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+     question_id UUID REFERENCES practice_questions(id) ON DELETE CASCADE,
+     selected_answer INTEGER NOT NULL,
+     is_correct BOOLEAN NOT NULL,
+     time_spent INTEGER NOT NULL,
+     created_at TIMESTAMPTZ DEFAULT NOW()
+   );
+
+   -- Saved courses table
+   CREATE TABLE saved_courses (
+     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+     course_id UUID REFERENCES courses(id) ON DELETE CASCADE,
+     created_at TIMESTAMPTZ DEFAULT NOW()
+   );
+
+   -- Enable Row Level Security (optional, for advanced auth)
+   ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+   ALTER TABLE courses ENABLE ROW LEVEL SECURITY;
+   ALTER TABLE articles ENABLE ROW LEVEL SECURITY;
+   ALTER TABLE practice_questions ENABLE ROW LEVEL SECURITY;
+   ALTER TABLE practice_attempts ENABLE ROW LEVEL SECURITY;
+   ALTER TABLE saved_courses ENABLE ROW LEVEL SECURITY;
+   ```
+
+5. **Run the Application:**
+   ```bash
+   npm run setup
+   npm run dev
+   ```
+
+**Benefits of Supabase:**
+- Real-time data synchronization
+- Built-in authentication and authorization
+- Automatic API generation
+- File storage integration
+- Better scalability than file storage
+- Real-time subscriptions for live updates
 - Repositories, controllers, models, routes, middleware, and services separated by responsibility
 - Seed data is initialized automatically on first start
 

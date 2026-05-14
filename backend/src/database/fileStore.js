@@ -42,8 +42,14 @@ async function ensureStoreReady() {
   }
 
   if (!storeReadyPromise) {
-    storeReadyPromise =
-      env.databaseBackend === "postgres" ? ensurePostgresStoreReady() : ensureFileStoreReady()
+    if (env.databaseBackend === "supabase") {
+      const { ensureSupabaseStoreReady } = require("./supabaseStore")
+      storeReadyPromise = ensureSupabaseStoreReady()
+    } else if (env.databaseBackend === "postgres") {
+      storeReadyPromise = ensurePostgresStoreReady()
+    } else {
+      storeReadyPromise = ensureFileStoreReady()
+    }
   }
 
   try {
@@ -71,6 +77,12 @@ async function ensureFileStoreReady() {
 async function ensureCollectionDocument(collectionName, seedValue) {
   await ensureStoreReady()
   assertKnownCollection(collectionName)
+
+  if (env.databaseBackend === "supabase") {
+    const { ensureSupabaseCollectionDocument } = require("./supabaseStore")
+    await ensureSupabaseCollectionDocument(collectionName, seedValue)
+    return
+  }
 
   if (env.databaseBackend === "postgres") {
     await getPool().query(
@@ -102,6 +114,11 @@ async function readCollection(collectionName) {
   await ensureStoreReady()
   assertKnownCollection(collectionName)
 
+  if (env.databaseBackend === "supabase") {
+    const { supabaseQuery } = require("./supabaseStore")
+    return supabaseQuery(collectionName)
+  }
+
   if (env.databaseBackend === "postgres") {
     const result = await getPool().query(
       `
@@ -131,6 +148,13 @@ async function readCollection(collectionName) {
 async function writeCollection(collectionName, data) {
   await ensureStoreReady()
   assertKnownCollection(collectionName)
+
+  if (env.databaseBackend === "supabase") {
+    // For Supabase, individual operations should use supabaseInsert/Update/Delete
+    // This function is mainly for file/postgres collection storage
+    console.warn(`writeCollection not implemented for Supabase backend: ${collectionName}`)
+    return
+  }
 
   if (env.databaseBackend === "postgres") {
     await getPool().query(
