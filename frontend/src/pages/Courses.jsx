@@ -4,6 +4,7 @@ import Card from "../components/Card"
 import SearchBar from "../components/SearchBar"
 import SectionHeader from "../components/SectionHeader"
 import { apiRequest } from "../utils/api"
+import { isTransientRequestError, requestWithRetry } from "../utils/requestRetry"
 
 const typeFilters = ["All", "University", "Polytechnic"]
 
@@ -18,26 +19,39 @@ const quickSearches = [
   "Medical Laboratory Science"
 ]
 
+function getCourseLoadErrorMessage(error) {
+  if (isTransientRequestError(error)) {
+    return "Could not reach the course catalog yet. The backend may still be starting. Try again."
+  }
+
+  return error?.message || "Unable to load courses."
+}
+
 export default function Courses() {
   const [query, setQuery] = useState("")
   const [activeType, setActiveType] = useState("All")
   const [courses, setCourses] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [reloadCount, setReloadCount] = useState(0)
 
   useEffect(() => {
     let isMounted = true
 
     async function loadCourses() {
+      setLoading(true)
+      setError("")
+
       try {
-        const response = await apiRequest("/courses")
+        const response = await requestWithRetry(() => apiRequest("/courses"))
 
         if (isMounted) {
           setCourses(response?.items || [])
+          setError("")
         }
       } catch (requestError) {
         if (isMounted) {
-          setError(requestError.message || "Unable to load courses.")
+          setError(getCourseLoadErrorMessage(requestError))
         }
       } finally {
         if (isMounted) {
@@ -51,7 +65,7 @@ export default function Courses() {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [reloadCount])
 
   const counts = useMemo(
     () => ({
@@ -207,8 +221,16 @@ export default function Courses() {
         </div>
 
         {error && (
-          <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-600 dark:border-red-900/40 dark:bg-red-900/10 dark:text-red-300">
-            {error}
+          <div className="flex flex-col gap-3 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-600 dark:border-red-900/40 dark:bg-red-900/10 dark:text-red-300 sm:flex-row sm:items-center sm:justify-between">
+            <span>{error}</span>
+            <button
+              type="button"
+              onClick={() => setReloadCount((count) => count + 1)}
+              disabled={loading}
+              className="inline-flex w-fit items-center rounded-full border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-70 dark:border-red-800 dark:text-red-200 dark:hover:bg-red-900/20"
+            >
+              {loading ? "Retrying..." : "Retry"}
+            </button>
           </div>
         )}
 

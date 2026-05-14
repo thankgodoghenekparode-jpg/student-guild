@@ -6,6 +6,8 @@ const AuthContext = createContext(null)
 const TOKEN_KEY = "scg-token"
 const USER_KEY = "scg-user"
 const LOCAL_USERS_KEY = "scg-db-users"
+const LOCAL_AUTH_FALLBACK_ENABLED =
+  import.meta.env.DEV || import.meta.env.VITE_ENABLE_LOCAL_AUTH_FALLBACK === "true"
 
 function readJsonStorage(key, fallbackValue) {
   try {
@@ -56,6 +58,10 @@ function createLocalSession(user) {
 }
 
 function shouldFallbackToLocalAuth(error) {
+  if (!LOCAL_AUTH_FALLBACK_ENABLED) {
+    return false
+  }
+
   const message = String(error?.message || "").toLowerCase()
 
   if ([404, 502, 503, 504].includes(error?.status)) {

@@ -1,20 +1,23 @@
 import { Route, Routes, useLocation, Navigate } from "react-router-dom"
+import { Suspense, lazy } from "react"
 import TopBar from "./components/TopBar"
 import BottomNav from "./components/BottomNav"
 import ProtectedRoute from "./components/ProtectedRoute"
 import useDarkMode from "./hooks/useDarkMode"
-import Dashboard from "./pages/Dashboard"
-import Careers from "./pages/Careers"
-import Courses from "./pages/Courses"
-import Quiz from "./pages/Quiz"
-import Practice from "./pages/Practice"
-import Planner from "./pages/Planner"
-import Advice from "./pages/Advice"
-import Profile from "./pages/Profile"
-import Scholarships from "./pages/Scholarships"
-import Auth from "./pages/Auth"
-import MentorChat from "./pages/MentorChat"
 import { useAuth } from "./context/AuthContext"
+
+// Lazy load pages for better performance
+const Dashboard = lazy(() => import("./pages/Dashboard"))
+const Careers = lazy(() => import("./pages/Careers"))
+const Courses = lazy(() => import("./pages/Courses"))
+const Quiz = lazy(() => import("./pages/Quiz"))
+const Practice = lazy(() => import("./pages/Practice"))
+const Planner = lazy(() => import("./pages/Planner"))
+const Advice = lazy(() => import("./pages/Advice"))
+const Profile = lazy(() => import("./pages/Profile"))
+const Scholarships = lazy(() => import("./pages/Scholarships"))
+const Auth = lazy(() => import("./pages/Auth"))
+const MentorChat = lazy(() => import("./pages/MentorChat"))
 
 export default function App() {
   const { isDark, setIsDark } = useDarkMode()
@@ -52,20 +55,26 @@ export default function App() {
       )}
 
       <main className={`flex-1 overflow-y-auto pb-24 md:pb-8 ${isAuthScreen ? "" : "p-6 md:p-8 max-w-7xl mx-auto w-full"}`}>
-        <Routes>
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/careers" element={<ProtectedRoute><Careers /></ProtectedRoute>} />
-          <Route path="/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />
-          <Route path="/quiz" element={<ProtectedRoute><Quiz /></ProtectedRoute>} />
-          <Route path="/practice" element={<ProtectedRoute><Practice /></ProtectedRoute>} />
-          <Route path="/mentor" element={<ProtectedRoute><MentorChat /></ProtectedRoute>} />
-          <Route path="/planner" element={<ProtectedRoute><Planner /></ProtectedRoute>} />
-          <Route path="/scholarships" element={<ProtectedRoute><Scholarships /></ProtectedRoute>} />
-          <Route path="/advice" element={<ProtectedRoute><Advice /></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <Suspense fallback={
+          <div className="flex items-center justify-center min-h-[200px]">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        }>
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/careers" element={<ProtectedRoute><Careers /></ProtectedRoute>} />
+            <Route path="/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />
+            <Route path="/quiz" element={<ProtectedRoute><Quiz /></ProtectedRoute>} />
+            <Route path="/practice" element={<ProtectedRoute><Practice /></ProtectedRoute>} />
+            <Route path="/mentor" element={<ProtectedRoute><MentorChat /></ProtectedRoute>} />
+            <Route path="/planner" element={<ProtectedRoute><Planner /></ProtectedRoute>} />
+            <Route path="/scholarships" element={<ProtectedRoute><Scholarships /></ProtectedRoute>} />
+            <Route path="/advice" element={<ProtectedRoute><Advice /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
       </main>
 
       {!isAuthScreen && <BottomNav />}

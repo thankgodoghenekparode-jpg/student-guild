@@ -4,8 +4,17 @@ import { Link } from "react-router-dom"
 import Card from "../components/Card"
 import { articleCategories } from "../data/articleCategories"
 import { apiRequest, resolveAssetUrl } from "../utils/api"
+import { isTransientRequestError, requestWithRetry } from "../utils/requestRetry"
 
 const filterOptions = ["All", ...articleCategories]
+
+function getArticleLoadErrorMessage(error) {
+  if (isTransientRequestError(error)) {
+    return "Could not reach the survival guide yet. The backend may still be starting. Try again."
+  }
+
+  return error?.message || "Unable to load survival guide articles."
+}
 
 export default function Advice() {
   const [activeFilter, setActiveFilter] = useState("All")
@@ -13,21 +22,26 @@ export default function Advice() {
   const [articles, setArticles] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [reloadCount, setReloadCount] = useState(0)
   const detailRef = useRef(null)
 
   useEffect(() => {
     let isMounted = true
 
     async function loadArticles() {
+      setLoading(true)
+      setError("")
+
       try {
-        const response = await apiRequest("/articles")
+        const response = await requestWithRetry(() => apiRequest("/articles"))
 
         if (isMounted) {
           setArticles(response?.items || [])
+          setError("")
         }
       } catch (requestError) {
         if (isMounted) {
-          setError(requestError.message || "Unable to load survival guide articles.")
+          setError(getArticleLoadErrorMessage(requestError))
         }
       } finally {
         if (isMounted) {
@@ -41,7 +55,7 @@ export default function Advice() {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [reloadCount])
 
   const filteredArticles = useMemo(() => {
     if (activeFilter === "All") {
@@ -120,8 +134,16 @@ export default function Advice() {
       </div>
 
       {error && (
-        <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-600 dark:border-red-900/40 dark:bg-red-900/10 dark:text-red-300">
-          {error}
+        <div className="flex flex-col gap-3 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-600 dark:border-red-900/40 dark:bg-red-900/10 dark:text-red-300 sm:flex-row sm:items-center sm:justify-between">
+          <span>{error}</span>
+          <button
+            type="button"
+            onClick={() => setReloadCount((count) => count + 1)}
+            disabled={loading}
+            className="inline-flex w-fit items-center rounded-full border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-70 dark:border-red-800 dark:text-red-200 dark:hover:bg-red-900/20"
+          >
+            {loading ? "Retrying..." : "Retry"}
+          </button>
         </div>
       )}
 

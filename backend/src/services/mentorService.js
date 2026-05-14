@@ -1,7 +1,49 @@
 const { sanitizeText } = require("../utils/sanitize")
+const { env } = require("../config/env")
+const OpenAI = require("openai")
 
-function createMentorReply(question) {
-  const normalizedQuestion = sanitizeText(question, { maxLength: 500 }).toLowerCase()
+const openai = env.openaiApiKey ? new OpenAI({ apiKey: env.openaiApiKey }) : null
+
+async function createMentorReply(question) {
+  const sanitizedQuestion = sanitizeText(question, { maxLength: 500 })
+
+  if (openai) {
+    try {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: `You are an AI career mentor for Nigerian secondary and university students. Provide helpful, accurate advice on courses, subjects, career paths, and admission requirements in Nigeria. Keep responses concise, practical, and encouraging. Focus on WAEC, JAMB, university/polytechnic options. If unsure, suggest checking official sources.`
+          },
+          {
+            role: "user",
+            content: sanitizedQuestion
+          }
+        ],
+        max_tokens: 300,
+        temperature: 0.7
+      })
+
+      const answer = completion.choices[0]?.message?.content?.trim() || "I'm sorry, I couldn't generate a response right now."
+
+      return {
+        provider: "openai-gpt-4o-mini",
+        message: answer,
+        followUps: [
+          "Can you tell me more about your subjects?",
+          "What course are you interested in?",
+          "Do you have questions about JAMB or WAEC?"
+        ]
+      }
+    } catch (error) {
+      console.error("OpenAI API error:", error.message)
+      // Fallback to placeholder
+    }
+  }
+
+  // Placeholder logic as fallback
+  const normalizedQuestion = sanitizedQuestion.toLowerCase()
 
   if (normalizedQuestion.includes("d7") && normalizedQuestion.includes("mathematics")) {
     return {

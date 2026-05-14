@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react"
+import { useMutation } from "@tanstack/react-query"
 import { Bot, CornerDownLeft, LoaderCircle, MessageSquareQuote, Sparkles, User } from "lucide-react"
 import Card from "../components/Card"
 import SectionHeader from "../components/SectionHeader"
@@ -21,15 +22,38 @@ export default function MentorChat() {
       followUps: starterPrompts
     }
   ])
-  const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const endRef = useRef(null)
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages, loading])
+  }, [messages, mutation.isPending])
 
-  const submitQuestion = async (questionText) => {
+  const mutation = useMutation({
+    mutationFn: async (question) => {
+      const response = await apiRequest("/mentor/query", {
+        method: "POST",
+        body: JSON.stringify({ question })
+      })
+      return response
+    },
+    onSuccess: (response) => {
+      setMessages((current) => [
+        ...current,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          text: response?.answer || "I could not generate a reply right now.",
+          followUps: response?.followUps || []
+        }
+      ])
+    },
+    onError: (error) => {
+      setError(error.message || "Unable to reach the AI mentor right now.")
+    }
+  })
+
+  const submitQuestion = (questionText) => {
     const question = String(questionText || draft).trim()
 
     if (!question) {
@@ -37,7 +61,6 @@ export default function MentorChat() {
     }
 
     setError("")
-    setLoading(true)
     setDraft("")
     setMessages((current) => [
       ...current,
@@ -48,26 +71,7 @@ export default function MentorChat() {
       }
     ])
 
-    try {
-      const response = await apiRequest("/mentor/query", {
-        method: "POST",
-        body: JSON.stringify({ question })
-      })
-
-      setMessages((current) => [
-        ...current,
-        {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          text: response?.answer || "I could not generate a reply right now.",
-          followUps: response?.followUps || []
-        }
-      ])
-    } catch (requestError) {
-      setError(requestError.message || "Unable to reach the AI mentor right now.")
-    } finally {
-      setLoading(false)
-    }
+    mutation.mutate(question)
   }
 
   return (
@@ -169,7 +173,7 @@ export default function MentorChat() {
               </div>
             ))}
 
-            {loading && (
+            {mutation.isPending && (
               <div className="flex justify-start">
                 <div className="rounded-3xl border border-slate-100 bg-white px-4 py-4 text-sm font-semibold text-slate-500 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
                   <div className="flex items-center gap-2">
@@ -206,7 +210,7 @@ export default function MentorChat() {
               />
               <button
                 type="submit"
-                disabled={loading}
+                disabled={mutation.isPending}
                 className="inline-flex items-center gap-2 self-end rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 transition-transform hover:-translate-y-0.5 disabled:opacity-70 disabled:hover:translate-y-0"
               >
                 <CornerDownLeft size={16} />

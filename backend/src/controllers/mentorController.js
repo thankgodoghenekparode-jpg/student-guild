@@ -3,7 +3,7 @@ const { assertRequiredString } = require("../utils/validation")
 
 async function askMentor(request, response) {
   const question = assertRequiredString(request.body.question, "Question", { maxLength: 500 })
-  const reply = createMentorReply(question)
+  const reply = await createMentorReply(question)
 
   response.json({
     provider: reply.provider,
