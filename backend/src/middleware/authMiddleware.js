@@ -1,6 +1,7 @@
 const { findUserById } = require("../database/repositories/userRepository")
 const { verifyAccessToken } = require("../services/authService")
 const { createHttpError } = require("../utils/errors")
+const { verifySupabaseToken, isSupabaseEnabled } = require("./authStrategy")
 
 async function requireAuth(request, response, next) {
   const authorization = request.headers.authorization
@@ -11,12 +12,20 @@ async function requireAuth(request, response, next) {
   }
 
   const token = authorization.slice("Bearer ".length).trim()
-  const payload = verifyAccessToken(token)
-  const user = await findUserById(payload.sub)
+  let user = null
+
+  if (isSupabaseEnabled()) {
+    user = await verifySupabaseToken(token)
+  }
 
   if (!user) {
-    next(createHttpError(401, "Session is no longer valid."))
-    return
+    const payload = verifyAccessToken(token)
+    user = await findUserById(payload.sub)
+
+    if (!user) {
+      next(createHttpError(401, "Session is no longer valid."))
+      return
+    }
   }
 
   request.user = user

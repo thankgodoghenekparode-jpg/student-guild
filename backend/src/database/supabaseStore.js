@@ -180,11 +180,88 @@ async function supabaseDelete(collectionName, query) {
   }
 }
 
+// User-specific functions for Supabase
+async function findUserById(id) {
+  const supabase = getSupabase()
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  if (error && error.code !== 'PGRST116') {
+    throw new Error(`Failed to find user: ${error.message}`)
+  }
+
+  return data
+}
+
+async function findUserByEmail(email) {
+  const supabase = getSupabase()
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('email', email)
+    .single()
+
+  if (error && error.code !== 'PGRST116') {
+    throw new Error(`Failed to find user: ${error.message}`)
+  }
+
+  return data
+}
+
+async function createUser(user) {
+  const supabase = getSupabase()
+  const { data, error } = await supabase
+    .from('users')
+    .insert({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role || 'student',
+      created_at: user.createdAt || new Date().toISOString(),
+      updated_at: user.updatedAt || new Date().toISOString()
+    })
+    .select()
+    .single()
+
+  if (error) {
+    throw new Error(`Failed to create user: ${error.message}`)
+  }
+
+  return data
+}
+
+async function updateUser(id, updates) {
+  const supabase = getSupabase()
+  const { data, error } = await supabase
+    .from('users')
+    .update({
+      ...updates,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) {
+    throw new Error(`Failed to update user: ${error.message}`)
+  }
+
+  return data
+}
+
 module.exports = {
   ensureSupabaseStoreReady,
   ensureSupabaseCollectionDocument,
   supabaseQuery,
   supabaseInsert,
   supabaseUpdate,
-  supabaseDelete
+  supabaseDelete,
+  // User-specific functions
+  findUserById,
+  findUserByEmail,
+  createUser,
+  updateUser
 }

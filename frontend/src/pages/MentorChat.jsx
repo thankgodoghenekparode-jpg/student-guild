@@ -25,10 +25,6 @@ export default function MentorChat() {
   const [error, setError] = useState("")
   const endRef = useRef(null)
 
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages, mutation.isPending])
-
   const mutation = useMutation({
     mutationFn: async (question) => {
       const response = await apiRequest("/mentor/query", {
@@ -52,6 +48,10 @@ export default function MentorChat() {
       setError(error.message || "Unable to reach the AI mentor right now.")
     }
   })
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages, mutation.isPending])
 
   const submitQuestion = (questionText) => {
     const question = String(questionText || draft).trim()

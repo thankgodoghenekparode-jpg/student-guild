@@ -19,9 +19,10 @@ const env = {
   databaseSsl: String(process.env.DATABASE_SSL || "false").trim().toLowerCase() === "true",
   uploadProvider: String(process.env.UPLOAD_PROVIDER || "auto").trim().toLowerCase(),
   blobReadWriteToken: String(process.env.BLOB_READ_WRITE_TOKEN || "").trim(),
-  openaiApiKey: String(process.env.OPENAI_API_KEY || "").trim(),
   supabaseUrl: String(process.env.SUPABASE_URL || "").trim(),
   supabaseServiceRoleKey: String(process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim(),
+  supabaseStorageBucket: String(process.env.SUPABASE_STORAGE_BUCKET || "").trim(),
+  openaiApiKey: String(process.env.OPENAI_API_KEY || "").trim(),
   frontendOrigin: process.env.FRONTEND_ORIGIN || "http://127.0.0.1:5173",
   adminOrigin: process.env.ADMIN_ORIGIN || "http://127.0.0.1:5174",
   additionalAllowedOrigins: process.env.ALLOWED_ORIGINS || "",
@@ -70,12 +71,20 @@ function resolveDatabaseBackend(currentEnv) {
 }
 
 function resolveUploadBackend(currentEnv) {
+  if (currentEnv.uploadProvider === "supabase") {
+    return "supabase"
+  }
+
   if (currentEnv.uploadProvider === "blob") {
     return "blob"
   }
 
   if (currentEnv.uploadProvider === "file") {
     return "file"
+  }
+
+  if (currentEnv.supabaseUrl && currentEnv.supabaseServiceRoleKey && currentEnv.supabaseStorageBucket) {
+    return "supabase"
   }
 
   return currentEnv.blobReadWriteToken ? "blob" : "file"

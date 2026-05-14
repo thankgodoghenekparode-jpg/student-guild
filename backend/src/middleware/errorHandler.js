@@ -12,10 +12,19 @@ function errorHandler(error, request, response, next) {
     console.error("[backend]", error)
   }
 
-  response.status(statusCode).json({
+  const responseBody = {
     message: statusCode >= 500 ? "Internal server error." : error.message,
     details: error.details || undefined
-  })
+  }
+
+  if (process.env.NODE_ENV !== "production" && statusCode >= 500) {
+    responseBody.error = {
+      message: error.message,
+      stack: error.stack
+    }
+  }
+
+  response.status(statusCode).json(responseBody)
 }
 
 module.exports = { errorHandler }
