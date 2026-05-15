@@ -1,12 +1,25 @@
 import { useEffect, useMemo, useRef, useState } from "react"
-import { ArrowUpRight, BookOpen, ExternalLink, GraduationCap, Lightbulb, Sparkles } from "lucide-react"
+import { ArrowUpRight, ExternalLink, GraduationCap, Lightbulb, Sparkles } from "lucide-react"
 import { Link } from "react-router-dom"
 import Card from "../components/Card"
 import { articleCategories } from "../data/articleCategories"
 import { apiRequest, resolveAssetUrl } from "../utils/api"
 import { isTransientRequestError, requestWithRetry } from "../utils/requestRetry"
+import authBg from "../assets/images/auth-bg.jpg"
+import courseThumb from "../assets/images/course-thumb.jpg"
+import coursesBg from "../assets/images/courses-bg.jpg"
+import dashboardHero from "../assets/images/dashboard-hero.jpg"
+import profileHeader from "../assets/images/profile-header.jpg"
 
 const filterOptions = ["All", ...articleCategories]
+
+const categoryImages = {
+  "Financial discipline": dashboardHero,
+  "Avoiding bad influence": profileHeader,
+  "Study techniques": coursesBg,
+  "Skill development": courseThumb,
+  "Internship preparation": authBg
+}
 
 function getArticleLoadErrorMessage(error) {
   if (isTransientRequestError(error)) {
@@ -14,6 +27,32 @@ function getArticleLoadErrorMessage(error) {
   }
 
   return error?.message || "Unable to load survival guide articles."
+}
+
+function getArticleImageUrl(article) {
+  return resolveAssetUrl(article.imageUrl) || categoryImages[article.category] || dashboardHero
+}
+
+function ArticleImage({ article }) {
+  const fallbackImage = categoryImages[article.category] || dashboardHero
+  const [src, setSrc] = useState(() => getArticleImageUrl(article))
+
+  useEffect(() => {
+    setSrc(getArticleImageUrl(article))
+  }, [article])
+
+  return (
+    <img
+      src={src}
+      alt={article.title}
+      className="h-48 w-full object-cover"
+      onError={() => {
+        if (src !== fallbackImage) {
+          setSrc(fallbackImage)
+        }
+      }}
+    />
+  )
 }
 
 export default function Advice() {
@@ -154,20 +193,12 @@ export default function Advice() {
       ) : (
         <div className="grid gap-6 md:grid-cols-2">
           {filteredArticles.map((article) => {
-            const imageUrl = resolveAssetUrl(article.imageUrl)
-
             return (
               <div
                 key={article.id}
                 className="group flex h-full flex-col overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition-all hover:border-primary/20 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900"
               >
-                {imageUrl ? (
-                  <img src={imageUrl} alt={article.title} className="h-48 w-full object-cover" />
-                ) : (
-                  <div className="flex h-48 items-center justify-center bg-gradient-to-br from-primary/15 via-secondary/10 to-emerald-100 text-primary dark:from-primary/20 dark:via-secondary/10 dark:to-slate-800">
-                    <BookOpen size={40} />
-                  </div>
-                )}
+                <ArticleImage article={article} />
 
                 <div className="flex flex-1 flex-col justify-between p-6">
                   <div>

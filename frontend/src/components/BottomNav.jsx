@@ -1,4 +1,4 @@
-import { BookOpen, Bot, GraduationCap, Home, MonitorPlay, Sparkles } from "lucide-react"
+import { Bot, GraduationCap, Home, MonitorPlay, Sparkles, Target } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 
 const links = [
@@ -7,7 +7,7 @@ const links = [
   { to: "/quiz", label: "Quiz", icon: Sparkles },
   { to: "/courses", label: "Courses", icon: GraduationCap },
   { to: "/mentor", label: "Mentor", icon: Bot },
-  { to: "/advice", label: "Guide", icon: BookOpen },
+  { to: "/planner", label: "Goals", icon: Target },
 ]
 
 export default function BottomNav() {

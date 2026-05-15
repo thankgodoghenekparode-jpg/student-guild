@@ -8,7 +8,7 @@ const quickLinks = [
   { title: "Explore Courses", icon: GraduationCap, to: "/courses", color: "bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400" },
   { title: "Survival Guide", icon: BookOpen, to: "/advice", color: "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400" },
   { title: "Scholarships", icon: Trophy, to: "/scholarships", color: "bg-slate-50 text-slate-700 dark:bg-slate-800 dark:text-slate-200" },
-  { title: "Study Planner", icon: BookOpen, to: "/planner", color: "bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300" }
+  { title: "Goal Tracker", icon: Target, to: "/planner", color: "bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300" }
 ]
 
 export default function Dashboard() {

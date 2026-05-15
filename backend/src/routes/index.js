@@ -6,6 +6,7 @@ const { articleRouter } = require("./articleRoutes")
 const { mentorRouter } = require("./mentorRoutes")
 const { adminRouter } = require("./adminRoutes")
 const { practiceRouter } = require("./practiceRoutes")
+const { whatsappRouter } = require("./whatsappRoutes")
 
 const apiRouter = express.Router()
 
@@ -16,5 +17,6 @@ apiRouter.use("/articles", articleRouter)
 apiRouter.use("/mentor", mentorRouter)
 apiRouter.use("/practice", practiceRouter)
 apiRouter.use("/admin", adminRouter)
+apiRouter.use("/whatsapp", whatsappRouter)
 
 module.exports = { apiRouter }

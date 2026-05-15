@@ -4,7 +4,15 @@ const OpenAI = require("openai")
 
 const openai = env.openaiApiKey ? new OpenAI({ apiKey: env.openaiApiKey }) : null
 
-async function createMentorReply(question) {
+function buildSystemPrompt(context = {}) {
+  const channelGuidance = context.channel === "whatsapp"
+    ? "The student is messaging through WhatsApp, so keep replies warm, direct, and easy to read on a phone. "
+    : ""
+
+  return `${channelGuidance}You are an AI career mentor for Nigerian secondary and university students. Provide helpful, accurate advice on courses, subjects, career paths, admission requirements, study planning, and student wellbeing. Keep responses concise, practical, and encouraging. Focus on WAEC, JAMB, university/polytechnic options. For personal counselling, be supportive but do not pretend to be a licensed therapist; if a student mentions self-harm, abuse, or immediate danger, tell them to contact a trusted adult, school counsellor, local emergency services, or a nearby health professional right away. If unsure, suggest checking official sources.`
+}
+
+async function createMentorReply(question, context = {}) {
   const sanitizedQuestion = sanitizeText(question, { maxLength: 500 })
 
   if (openai) {
@@ -14,7 +22,7 @@ async function createMentorReply(question) {
         messages: [
           {
             role: "system",
-            content: `You are an AI career mentor for Nigerian secondary and university students. Provide helpful, accurate advice on courses, subjects, career paths, and admission requirements in Nigeria. Keep responses concise, practical, and encouraging. Focus on WAEC, JAMB, university/polytechnic options. If unsure, suggest checking official sources.`
+            content: buildSystemPrompt(context)
           },
           {
             role: "user",

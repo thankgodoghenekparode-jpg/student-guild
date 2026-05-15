@@ -1,5 +1,6 @@
 const { spawn } = require("node:child_process")
 const fs = require("node:fs")
+const http = require("node:http")
 const path = require("node:path")
 
 const rootDir = path.resolve(__dirname, "..")
@@ -65,6 +66,24 @@ function runProcess(label, command, args, options = {}) {
   return child
 }
 
+function isServiceAvailable(url) {
+  return new Promise((resolve) => {
+    const request = http.get(url, (response) => {
+      response.resume()
+      resolve(response.statusCode >= 200 && response.statusCode < 500)
+    })
+
+    request.setTimeout(1000, () => {
+      request.destroy()
+      resolve(false)
+    })
+
+    request.on("error", () => {
+      resolve(false)
+    })
+  })
+}
+
 process.on("SIGINT", () => {
   stopChildren()
 })
@@ -73,20 +92,42 @@ process.on("SIGTERM", () => {
   stopChildren()
 })
 
-if (!fs.existsSync(viteCliPath)) {
-  process.stderr.write("[frontend] Missing Vite CLI. Run `npm run setup` from the repo root first.\n")
-  process.exit(1)
+async function main() {
+  if (!fs.existsSync(viteCliPath)) {
+    process.stderr.write("[frontend] Missing Vite CLI. Run `npm run setup` from the repo root first.\n")
+    process.exit(1)
+  }
+
+  if (!fs.existsSync(adminViteCliPath)) {
+    process.stderr.write("[admin] Missing Vite CLI. Run `npm run setup` from the repo root first.\n")
+    process.exit(1)
+  }
+
+  if (await isServiceAvailable("http://127.0.0.1:5000/api/health")) {
+    process.stdout.write("[backend] Reusing existing API at http://127.0.0.1:5000\n")
+  } else {
+    runProcess("backend", process.execPath, [path.join(rootDir, "backend", "server.js")])
+  }
+
+  if (await isServiceAvailable("http://127.0.0.1:5173")) {
+    process.stdout.write("[frontend] Reusing existing app at http://127.0.0.1:5173\n")
+  } else {
+    runProcess("frontend", process.execPath, [viteCliPath, "--host", "127.0.0.1", "--strictPort"], {
+      cwd: frontendDir
+    })
+  }
+
+  if (await isServiceAvailable("http://127.0.0.1:5174")) {
+    process.stdout.write("[admin] Reusing existing app at http://127.0.0.1:5174\n")
+  } else {
+    runProcess("admin", process.execPath, [adminViteCliPath, "--host", "127.0.0.1", "--port", "5174", "--strictPort"], {
+      cwd: adminDir
+    })
+  }
 }
 
-if (!fs.existsSync(adminViteCliPath)) {
-  process.stderr.write("[admin] Missing Vite CLI. Run `npm run setup` from the repo root first.\n")
+main().catch((error) => {
+  process.stderr.write(`${error.stack || error.message || error}\n`)
+  stopChildren()
   process.exit(1)
-}
-
-runProcess("backend", process.execPath, [path.join(rootDir, "backend", "server.js")])
-runProcess("frontend", process.execPath, [viteCliPath, "--host", "127.0.0.1"], {
-  cwd: frontendDir
-})
-runProcess("admin", process.execPath, [adminViteCliPath, "--host", "127.0.0.1", "--port", "5174"], {
-  cwd: adminDir
 })
